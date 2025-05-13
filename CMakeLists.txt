@@ -2,24 +2,30 @@ cmake_minimum_required(VERSION 3.10)
 project(MyProject)
 
 set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED True)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# Set source directory
-set(SOURCE_DIR "${CMAKE_SOURCE_DIR}/src")
+# ----- directories ----------------------------------------------------------
+set(SOURCE_DIR  "${CMAKE_SOURCE_DIR}/src")
+set(INCLUDE_DIR "${CMAKE_SOURCE_DIR}/include")
 
-# Add executable
-add_executable(MyApp "${SOURCE_DIR}/application.cpp")
+# ----- sources --------------------------------------------------------------
+add_executable(MyApp
+    ${SOURCE_DIR}/application.cpp
+    ${SOURCE_DIR}/glad.c
+)
 
-# Find GLFW
-find_package(PkgConfig REQUIRED)
-pkg_search_module(GLFW REQUIRED glfw3)
+# ----- headers --------------------------------------------------------------
+target_include_directories(MyApp PRIVATE
+    ${INCLUDE_DIR}        # glad.h  + KHR/…
+)
 
-# Find OpenGL
+# ----- GLAD needs OpenGL ----------------------------------------------------
 find_package(OpenGL REQUIRED)
+target_link_libraries(MyApp PRIVATE OpenGL::GL)
 
-# Include GLFW and OpenGL headers
-include_directories(${GLFW_INCLUDE_DIRS})
-link_directories(${GLFW_LIBRARY_DIRS})
+# ----- GLFW -----------------------------------------------------------------
+# This finds /usr/lib/cmake/glfw3/glfw3Config.cmake (Arch, Ubuntu, etc.)
+find_package(glfw3 3.3 REQUIRED)
+target_link_libraries(MyApp PRIVATE glfw)
 
-# Link GLFW and OpenGL
-target_link_libraries(MyApp ${GLFW_LIBRARIES} ${OPENGL_gl_LIBRARY})
+# ---------------------------------------------------------------------------
