@@ -31,7 +31,6 @@ static ShaderProgramSource ParseShader(const std::string& filepath) {
     }
     
     while (getline(stream, line)) {
-        std::cout << line;
         if (line.find("#shader") != std::string::npos) {
             if (line.find("vertex") != std::string::npos)
                 type = ShaderType::VERTEX;
@@ -109,6 +108,7 @@ int main() {
     }
     //Create an OpenGL contex for the window
     glfwMakeContextCurrent(window);
+    glfwSwapInterval(1); //Limit framerate
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
     {
         std::cout << "Failed to initialize GLAD" << std::endl;
@@ -118,38 +118,29 @@ int main() {
     //Set the method for changing window size
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
     //Create the positions of the vertices
-    float positions[8] = {
-        -0.5f, -0.5f,
-        -0.5f, 0.5f,
-        0.5f, 0.5f,
-        0.5f, -0.5f
+    float positions[20] = {
+        -1.0f, -1.0f, 1.0f, 0.0f, 0.0f,
+        -1.0f, 1.0f, 0.0f, 1.0f, 0.0f,
+        1.0f, 1.0f, 0.0f, 0.0f, 1.0f,
+        1.0f, -1.0f, 1.0f, 1.0f, 1.0f
     };
     //Create the index array for drawing two triangles
-    unsigned int indices1[] = {
-        0, 1, 2
-    };
-    unsigned int indices2[] = {
+    unsigned int indices[] = {
+        0, 1, 2,
         0, 2, 3
     };
     //Create the vertex array object
-    GLuint vao[2];
-    glGenVertexArrays(2, vao);
-    glBindVertexArray(vao[0]);
+    GLuint vao;
+    glGenVertexArrays(1, &vao);
+    glBindVertexArray(vao);
     //Create the buffer inside the GPU
+    VertexBuffer vb1(positions, 4*5*sizeof(float));
 
-    VertexBuffer vb1(positions, 4*2*sizeof(float));
-
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 2, 0);
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 5, 0);
     glEnableVertexAttribArray(0);
-    IndexBuffer ib1(indices1, 3);
-
-    glBindVertexArray(vao[1]);
-
-    VertexBuffer vb2(positions, 4*2*sizeof(float));
-
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 2, 0);
-    glEnableVertexAttribArray(0);
-    IndexBuffer ib2(indices2, 3);
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(float) * 5, (void*)(2*sizeof(float)));
+    glEnableVertexAttribArray(1);
+    IndexBuffer ib1(indices, 6);
 
     ShaderProgramSource shaderSource = ParseShader("shaders/basic.shader");
 
@@ -160,6 +151,8 @@ int main() {
     //ASSERT(location!=-1);
     float red = 0.0f;
     float increment = 0.01f;
+
+    glBindVertexArray(vao);
 
     while(!glfwWindowShouldClose(window))
     {
@@ -172,17 +165,9 @@ int main() {
 
         glClear(GL_COLOR_BUFFER_BIT);
 
-        glUniform4f(location, red, 0.3f, 0.8f, 1.0f);
+        glUniform4f(location, red, 1.0-red, 0.0, 1.0f);
 
-        glBindVertexArray(vao[0]);
-
-        glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, nullptr);
-
-        glBindVertexArray(vao[1]);
-
-        glUniform4f(location, 0.0f, red, 0.8f, 1.0f);
-
-        glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, nullptr);
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
 
         glfwSwapBuffers(window);
         glfwPollEvents();    
