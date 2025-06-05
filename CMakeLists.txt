@@ -8,27 +8,36 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(SOURCE_DIR  "${CMAKE_SOURCE_DIR}/src")
 set(INCLUDE_DIR "${CMAKE_SOURCE_DIR}/include")
 
-# ----- sources --------------------------------------------------------------
-file(GLOB SRC_FILES "${SOURCE_DIR}/*.cpp")
-file(GLOB HEADER_FILES "${SOURCE_DIR}/*.c")
-
-add_executable(MyApp
-    ${SRC_FILES}
-    ${HEADER_FILES}
-)
-
 # ----- headers --------------------------------------------------------------
-target_include_directories(MyApp PRIVATE
-    ${INCLUDE_DIR}        # glad.h  + KHR/
+include_directories(${INCLUDE_DIR})
+
+# ----- Dependencies ---------------------------------------------------------
+find_package(OpenGL REQUIRED)
+find_package(glfw3 3.3 REQUIRED)
+
+# ----- Common sources -------------------------------------------------------
+file(GLOB COMMON_SOURCES "${SOURCE_DIR}/common/*.cpp" "${SOURCE_DIR}/common/*.c")
+message(STATUS "COMMON_SOURCES = ${COMMON_SOURCES}")
+
+# ----- BasicShader -----------------------------------------------------------------
+set(BasicShader_SOURCES
+    ${SOURCE_DIR}/application.cpp
+    ${COMMON_SOURCES}
 )
 
-# ----- GLAD needs OpenGL ----------------------------------------------------
-find_package(OpenGL REQUIRED)
-target_link_libraries(MyApp PRIVATE OpenGL::GL)
+add_executable(BasicShader ${BasicShader_SOURCES})
+target_include_directories(BasicShader PRIVATE ${INCLUDE_DIR})
+target_link_libraries(BasicShader PRIVATE OpenGL::GL glfw)
 
-# ----- GLFW -----------------------------------------------------------------
-find_package(glfw3 3.3 REQUIRED)
-target_link_libraries(MyApp PRIVATE glfw)
+# ----- TextureShader -----------------------------------------------------------------
+set(TextureShader_SOURCES
+    ${SOURCE_DIR}/textureTest.cpp
+    ${COMMON_SOURCES}
+)
+
+add_executable(TextureShader ${TextureShader_SOURCES})
+target_include_directories(TextureShader PRIVATE ${INCLUDE_DIR})
+target_link_libraries(TextureShader PRIVATE OpenGL::GL glfw)
 
 # ----- Copy shaders directory -----------------------------------------------
 file(COPY ${CMAKE_SOURCE_DIR}/shaders DESTINATION ${CMAKE_BINARY_DIR})
