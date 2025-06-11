@@ -2,12 +2,10 @@
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
 
-#include <cmath>
-
 #include <indexBuffer.h>
 #include <vertexBuffer.h>
 #include <shaderLoader.h>
-#include <renderer.h>
+#include <initializer.h>
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
     glViewport(0, 0, width, height);
@@ -22,21 +20,24 @@ int main() {
     //Initialize glfw window
     Renderer glRenderer = Renderer();
     glRenderer.initGLFW();
-    auto window = glRenderer.createWindow(800, 600);
+    auto window = glRenderer.createWindow(1080, 1080);
     glRenderer.initGLAD();
     //Set the method for changing window size
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
     
     //Create the positions of the vertices
-    float positions[8] = {
+    float positions[10] = {
         -1.0f, -1.0f,
         -1.0f, 1.0f,
         1.0f, 1.0f,
-        1.0f, -1.0f
+        1.0f, -1.0f,
+        0.0f, 0.0f
     };
-    unsigned int indices[] = {
-        0, 1, 2,
-        2, 3, 0
+    unsigned int indices[12] = {
+        0, 4, 1,
+        1, 4, 2,
+        2, 4, 3,
+        3, 4, 0
     };
     //Create the vertex array object
     GLuint vao;
@@ -47,7 +48,7 @@ int main() {
 
     glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 2, 0);
     glEnableVertexAttribArray(0);
-    IndexBuffer ib1(indices, 6);
+    IndexBuffer ib1(indices, 12);
 
     ShaderProgramSource shaderSource = parseShader("shaders/basic.shader");
 
@@ -57,17 +58,18 @@ int main() {
     int location = glGetUniformLocation(shader, "vertexColorUniform");
     
     glm::vec3 colors[5];
+    colors[4] = glm::vec3(0.5f, 0.5f, 0.5f);
 
     while(!glfwWindowShouldClose(window))
     {
         processInput(window);
 
-        float time = glfwGetTime();
-        for (int i = 0; i < 5; ++i) {
+        float time = glfwGetTime() * 3;
+        for (int i = 0; i < 4; ++i) {
             colors[i] = glm::vec3(
-                0.5f + 0.5f * sin(time + i),
-                0.5f + 0.5f * sin(time + i + 1.05),
-                0.5f + 0.5f * sin(time + i + 2.1)
+                0.5f + 0.5f * sin(time + 1.57*i),
+                0.5f + 0.5f * sin(time + 1.57*i + 2.1),
+                0.5f + 0.5f * sin(time + 1.57*i + 4.2)
             );
         }
 
@@ -75,16 +77,11 @@ int main() {
 
         glUniform3fv(location, 5, &colors[0][0]);
 
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
+        glDrawElements(GL_TRIANGLES, 12, GL_UNSIGNED_INT, nullptr);
 
         glfwSwapBuffers(window);
         glfwPollEvents();    
     }
     glfwTerminate();
     return 0;
-    //Create the index array for drawing two triangles
-    /*unsigned int indices[] = {
-        0, 1, 2,
-        0, 2, 3
-    };*/
 }
