@@ -20,6 +20,6 @@ uniform sampler2D inputTexture;
 
 void main()
 {
-    FragColor = texture(inputTexture, TexCoords) + vec4(0.002, 0.002, 0.002, 0.0);
+    FragColor = texture(inputTexture, TexCoords) + vec4(0.002, 0.004, 0.006, 0.0);
     //FragColor = color + vec4(0.002, 0.002, 0.002, 0.0); // brighten slightly
 }

@@ -23,7 +23,7 @@ int main() {
     glRenderer.initGLAD();
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 
-    //Create and bind a framebuffer object
+    //Create and bind a framebuffer objectshader
     unsigned int fbo[2], tex[2];
     glGenFramebuffers(2, fbo);
     glGenTextures(2, tex);
@@ -43,38 +43,57 @@ int main() {
             std::cout << "Framebuffer " << i << " is complete!\n";
     }
     
-    float quad[8] = {
-        -1.0f, -1.0f,
-        -1.0f, 1.0f,
-        1.0f, 1.0f,
-        1.0f, -1.0f
+    float quad[16] = {
+        -1.0f, -1.0f, 0.0f, 0.0f,
+        -1.0f, 1.0f, 0.0f, 1.0f,
+        1.0f, 1.0f, 1.0f, 1.0f,
+        1.0f, -1.0f, 1.0f, 0.0f
+    };
+
+    float smallSquare[8] = {
+        -0.01f, -0.01f,
+        -0.01f, 0.01f,
+        0.01f, 0.01f,
+        0.01f, -0.01f
     };
 
     unsigned int indices[6] = {
         0, 1, 2,
         2, 3, 0
     };
-    unsigned int vao; //Vertex array object
-    glGenVertexArrays(1, &vao);
-    glBindVertexArray(vao);
+    unsigned int vao[2]; //Vertex array object
+    glGenVertexArrays(2, vao);
     
     //Create GPU buffers
-    VertexBuffer vb(quad, sizeof(quad));
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 2, 0);
-    glEnableVertexAttribArray(0);glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
+    //Full-screen quad
+    glBindVertexArray(vao[0]);
+    VertexBuffer vbf(quad, sizeof(quad));
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 4, 0);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
     glEnableVertexAttribArray(1);
-
-    IndexBuffer ib(indices, 6);
+    IndexBuffer ibf(indices, 6);
+    //Small square
+    glBindVertexArray(vao[1]);
+    VertexBuffer vbs(smallSquare, sizeof(smallSquare));
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 4, 0);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
+    glEnableVertexAttribArray(1);
+    IndexBuffer ibs(indices, 6);
 
     //Initialize the shaders
-    ShaderProgramSource shaderSource = parseShader("shaders/texture.shader");
-    unsigned int shader = createShader(shaderSource.VertexSource, shaderSource.FragmentSource);
-    glUseProgram(shader);
+    ShaderProgramSource basicSource = parseShader("shaders/basic.shader");
+    unsigned int basicShader = createShader(basicSource.VertexSource, basicSource.FragmentSource);
+
+    ShaderProgramSource textureSource = parseShader("shaders/texture.shader");
+    unsigned int textureShader = createShader(textureSource.VertexSource, textureSource.FragmentSource);
+    //glUseProgram(textureShader);
 
     int readIndex = 0;
     int writeIndex = 1;
 
-    int uniformLocation = glGetUniformLocation(shader, "inputTexture");
+    int uniformLocation = glGetUniformLocation(textureShader, "inputTexture");
     
     //Main loop
     while(!glfwWindowShouldClose(window)) {
@@ -82,22 +101,28 @@ int main() {
         glBindFramebuffer(GL_FRAMEBUFFER, fbo[writeIndex]);
         glClear(GL_COLOR_BUFFER_BIT);
         //Bind the texture
+        glUseProgram(textureShader);
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, tex[readIndex]);
 
         glUniform1i(uniformLocation, 0);
 
-        glBindVertexArray(vao);
+        glBindVertexArray(vao[0]);
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+
+        glUseProgram(basicShader);
+        glBindVertexArray(vao[1]);
+        //glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
         glClear(GL_COLOR_BUFFER_BIT);
 
+        glUseProgram(textureShader);
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, tex[writeIndex]);
         glUniform1i(uniformLocation, 0);
 
-        glBindVertexArray(vao);
+        glBindVertexArray(vao[0]);
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
         glfwSwapBuffers(window);
