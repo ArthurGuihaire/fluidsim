@@ -1,3 +1,3 @@
 cmake ..
 make -j$(nproc)
-./BasicShader
+./TextureShader

@@ -50,7 +50,7 @@ int main() {
     glEnableVertexAttribArray(0);
     IndexBuffer ib1(indices, 12);
 
-    ShaderProgramSource shaderSource = parseShader("shaders/basic.shader");
+    ShaderProgramSource shaderSource = parseShader("shaders/wheel.shader");
 
     unsigned int shader = createShader(shaderSource.VertexSource, shaderSource.FragmentSource);
     glUseProgram(shader);
