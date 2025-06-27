@@ -9,6 +9,7 @@
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
     glViewport(0, 0, width, height);
+    
 }
 
 void processInput(GLFWwindow *window) {
@@ -76,25 +77,30 @@ int main() {
     //Small square
     glBindVertexArray(vao[1]);
     VertexBuffer vbs(smallSquare, sizeof(smallSquare));
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 4, 0);
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 2, 0);
     glEnableVertexAttribArray(0);
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
-    glEnableVertexAttribArray(1);
     IndexBuffer ibs(indices, 6);
 
     //Initialize the shaders
     ShaderProgramSource basicSource = parseShader("shaders/basic.shader");
     unsigned int basicShader = createShader(basicSource.VertexSource, basicSource.FragmentSource);
 
+    //ShaderProgramSource textureSource = parseShader("shaders/texture.shader");
     ShaderProgramSource textureSource = parseShader("shaders/texture.shader");
     unsigned int textureShader = createShader(textureSource.VertexSource, textureSource.FragmentSource);
     //glUseProgram(textureShader);
 
+    ShaderProgramSource copyTextureSource = parseShader("shaders/copyTexture.shader");
+    unsigned int copyTextureShader = createShader(copyTextureSource.VertexSource, copyTextureSource.FragmentSource);
+
+    //Uniforms for texture to sample from and normalized pixel size
     int readIndex = 0;
     int writeIndex = 1;
+    float texelSize = 1.0f / 100.0f;
 
-    int uniformLocation = glGetUniformLocation(textureShader, "inputTexture");
-    
+    int uniformTexelLocation = glGetUniformLocation(textureShader, "texelSize");
+    int uniformTextureLocation = glGetUniformLocation(textureShader, "inputTexture");
+
     //Main loop
     while(!glfwWindowShouldClose(window)) {
         processInput(window);
@@ -105,28 +111,26 @@ int main() {
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, tex[readIndex]);
 
-        glUniform1i(uniformLocation, 0);
+        glUniform1i(uniformTextureLocation, 0);
+        glUniform1i(uniformTexelLocation, texelSize);
 
         glBindVertexArray(vao[0]);
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
         glUseProgram(basicShader);
         glBindVertexArray(vao[1]);
-        //glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
         glClear(GL_COLOR_BUFFER_BIT);
 
-        glUseProgram(textureShader);
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, tex[writeIndex]);
-        glUniform1i(uniformLocation, 0);
+        glUseProgram(copyTextureShader);
 
         glBindVertexArray(vao[0]);
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
         glfwSwapBuffers(window);
-        glfwPollEvents();    
+        glfwPollEvents();
 
         std::swap(readIndex, writeIndex);
     }
