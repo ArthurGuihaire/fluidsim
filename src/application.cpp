@@ -19,8 +19,9 @@ void processInput(GLFWwindow *window) {
 int main() {
     //Initialize glfw window
     Renderer glRenderer = Renderer();
+    glRenderer.setWindowSize(1080, 1080);
     glRenderer.initGLFW();
-    auto window = glRenderer.createWindow(1080, 1080);
+    auto window = glRenderer.createWindow();
     glRenderer.initGLAD();
     //Set the method for changing window size
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);

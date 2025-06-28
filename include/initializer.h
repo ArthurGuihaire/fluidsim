@@ -7,7 +7,8 @@ class Renderer {
         int windowHeight;
     public:
         Renderer();
+        void setWindowSize(int width, int height);
         void initGLFW();
         void initGLAD();
-        GLFWwindow* createWindow(int width, int height);
+        GLFWwindow* createWindow();
 };

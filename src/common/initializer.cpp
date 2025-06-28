@@ -3,6 +3,11 @@
 
 Renderer::Renderer() {}
 
+void Renderer::setWindowSize(int width, int height) {
+    windowWidth = width;
+    windowHeight = height;
+}
+
 void Renderer::initGLFW() {
     glfwInit();
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
@@ -10,10 +15,8 @@ void Renderer::initGLFW() {
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 }
 
-GLFWwindow* Renderer::createWindow(int width, int height) {
-    windowWidth = width;
-    windowHeight = height;
-    GLFWwindow* window = glfwCreateWindow(width, height, "OpenGL", NULL, NULL);
+GLFWwindow* Renderer::createWindow() {
+    GLFWwindow* window = glfwCreateWindow(windowWidth, windowHeight, "OpenGL", NULL, NULL);
     if (window == NULL)
     {
         std::cout << "Failed to create GLFW window" << std::endl;
@@ -32,5 +35,5 @@ void Renderer::initGLAD() {
         std::cout << "Failed to initialize GLAD" << std::endl;
         return;
     }
-    glViewport(0, 0, 800, 600);
+    glViewport(0, 0, windowWidth, windowHeight);
 }

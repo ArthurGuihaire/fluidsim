@@ -17,12 +17,12 @@ out vec4 FragColor;
 
 in vec2 TexCoords;
 uniform sampler2D inputTexture;
-//uniform float texelSize;
+uniform float texelSize;
 
 void main()
 {
-    float texelSizeX = 0.00125;
-    float texelSizeY = 0.00167;
+    float texelSizeX = texelSize;
+    float texelSizeY = texelSize;
     float red = texture(inputTexture, vec2(TexCoords.x + texelSizeX, TexCoords.y + texelSizeY)).x;
     float green = texture(inputTexture, vec2(TexCoords.x - texelSizeX, TexCoords.y + texelSizeY)).y;
     float blue = texture(inputTexture, vec2(TexCoords.x + texelSizeX, TexCoords.y - texelSizeY)).z;

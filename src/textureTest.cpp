@@ -2,6 +2,7 @@
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
 
+#include <constants.h>
 #include <indexBuffer.h>
 #include <vertexBuffer.h>
 #include <shaderLoader.h>
@@ -19,8 +20,9 @@ void processInput(GLFWwindow *window) {
 
 int main() {
     Renderer glRenderer = Renderer();
+    glRenderer.setWindowSize(width, height);
     glRenderer.initGLFW();
-    auto window = glRenderer.createWindow(800, 600);
+    auto window = glRenderer.createWindow();
     glRenderer.initGLAD();
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 
@@ -32,7 +34,7 @@ int main() {
         glBindFramebuffer(GL_FRAMEBUFFER, fbo[i]);
 
         glBindTexture(GL_TEXTURE_2D, tex[i]);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, 800, 600, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
 
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -96,7 +98,7 @@ int main() {
     //Uniforms for texture to sample from and normalized pixel size
     int readIndex = 0;
     int writeIndex = 1;
-    float texelSize = 1.0f / 100.0f;
+    float texelSize = 0.004f;
 
     int uniformTexelLocation = glGetUniformLocation(textureShader, "texelSize");
     int uniformTextureLocation = glGetUniformLocation(textureShader, "inputTexture");
@@ -112,7 +114,7 @@ int main() {
         glBindTexture(GL_TEXTURE_2D, tex[readIndex]);
 
         glUniform1i(uniformTextureLocation, 0);
-        glUniform1i(uniformTexelLocation, texelSize);
+        glUniform1f(uniformTexelLocation, texelSize);
 
         glBindVertexArray(vao[0]);
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
