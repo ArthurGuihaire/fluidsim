@@ -7,8 +7,9 @@ void main() {
 
 #shader fragment
 #version 330 core
-out vec3 color;
+uniform vec3 inputColor;
+out vec3 fragColor;
 
 void main() {
-    color = vec3(1.0, 1.0, 1.0);
+    fragColor = inputColor;
 };

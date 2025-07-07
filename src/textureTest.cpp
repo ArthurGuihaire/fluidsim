@@ -41,9 +41,9 @@ int main() {
 
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex[i], 0);
 
-        //Optionally check completeness
+        //Check completeness
         if (glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE)
-            std::cout << "Framebuffer " << i << " is complete!\n";
+            std::cout << "Framebuffer " << i << " is complete!" << std::endl;
     }
     
     float quad[16] = {
@@ -88,40 +88,57 @@ int main() {
     unsigned int basicShader = createShader(basicSource.VertexSource, basicSource.FragmentSource);
 
     //ShaderProgramSource textureSource = parseShader("shaders/texture.shader");
-    ShaderProgramSource textureSource = parseShader("shaders/texture.shader");
-    unsigned int textureShader = createShader(textureSource.VertexSource, textureSource.FragmentSource);
-    //glUseProgram(textureShader);
+    ShaderProgramSource textureSource = parseShader("shaders/advection.shader");
+    unsigned int advectionShader = createShader(textureSource.VertexSource, textureSource.FragmentSource);
+    //glUseProgram(advectionShader);
 
     ShaderProgramSource copyTextureSource = parseShader("shaders/copyTexture.shader");
     unsigned int copyTextureShader = createShader(copyTextureSource.VertexSource, copyTextureSource.FragmentSource);
 
+    ShaderProgramSource divergenceSource = parseShader("shaders/divergence.shader");
+    unsigned int divergenceShader = createShader(divergenceSource.VertexSource, divergenceSource.FragmentSource);
+
     //Uniforms for texture to sample from and normalized pixel size
     int readIndex = 0;
     int writeIndex = 1;
-    float texelSize = 0.004f;
+    bool renderStartingSquare = true;
 
-    int uniformTexelLocation = glGetUniformLocation(textureShader, "texelSize");
-    int uniformTextureLocation = glGetUniformLocation(textureShader, "inputTexture");
+    float texelSizeX = 1.0f/width;
+    float texelSizeY = 1.0f/height;
+
+    int uniformTexelLocationAdvection = glGetUniformLocation(advectionShader, "texelSize");
+    int uniformTexelLocationDivergence = glGetUniformLocation(divergenceShader, "texelSize");
+    std::cout << "advection: " << uniformTexelLocationAdvection << "\ndivergence: " << uniformTexelLocationDivergence << std::endl;
+    int uniformTextureLocation = glGetUniformLocation(advectionShader, "inputTexture");
+    int uniformColorLocation = glGetUniformLocation(basicShader, "inputColor");
 
     //Main loop
     while(!glfwWindowShouldClose(window)) {
         processInput(window);
         glBindFramebuffer(GL_FRAMEBUFFER, fbo[writeIndex]);
         glClear(GL_COLOR_BUFFER_BIT);
-        //Bind the texture
-        glUseProgram(textureShader);
+        glUseProgram(advectionShader);
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, tex[readIndex]);
 
         glUniform1i(uniformTextureLocation, 0);
-        glUniform1f(uniformTexelLocation, texelSize);
+        glUniform2f(uniformTexelLocationAdvection, texelSizeX, texelSizeY);
 
         glBindVertexArray(vao[0]);
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
         glUseProgram(basicShader);
-        glBindVertexArray(vao[1]);
+        glBindVertexArray(vao[1]); //Render the small square in white
+        glUniform3f(uniformColorLocation, 1.0, 1.0, 1.0);
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+
+        if (renderStartingSquare)
+        {
+            glBindVertexArray(vao[0]); //Use basicShader to fill a texture with gray
+            glUniform3f(uniformColorLocation, 0.5, 0.5, 0.5);
+            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+            renderStartingSquare = false;
+        }
 
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
         glClear(GL_COLOR_BUFFER_BIT);
