@@ -26,6 +26,10 @@ int main() {
     glRenderer.initGLAD();
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 
+    //Define normalized pixel (texel) sizes
+    float texelSizeX = 1.0f/width;
+    float texelSizeY = 1.0f/height;
+
     //Create and bind a framebuffer objectshader
     unsigned int fbo[2], tex[2];
     glGenFramebuffers(2, fbo);
@@ -34,7 +38,7 @@ int main() {
         glBindFramebuffer(GL_FRAMEBUFFER, fbo[i]);
 
         glBindTexture(GL_TEXTURE_2D, tex[i]);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
 
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -45,6 +49,8 @@ int main() {
         if (glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE)
             std::cout << "Framebuffer " << i << " is complete!" << std::endl;
     }
+
+    glDisable(GL_BLEND); //Blending causes problems for some reason
     
     float quad[16] = {
         -1.0f, -1.0f, 0.0f, 0.0f,
@@ -53,18 +59,19 @@ int main() {
         1.0f, -1.0f, 1.0f, 0.0f
     };
 
+    //Muliply by normalized pixel sizes so its actually a square
     float smallSquare[8] = {
-        -0.01f, -0.01f,
-        -0.01f, 0.01f,
-        0.01f, 0.01f,
-        0.01f, -0.01f
+        -50 * texelSizeX, -50 * texelSizeY,
+        -50 * texelSizeX, 50 * texelSizeY,
+        50 * texelSizeX, 50 * texelSizeY,
+        50 * texelSizeX, -50 * texelSizeY
     };
 
     unsigned int indices[6] = {
         0, 1, 2,
         2, 3, 0
     };
-    unsigned int vao[2]; //Vertex array object
+    unsigned int vao[2]; //Vertex array objects for fullscreen quad and small square
     glGenVertexArrays(2, vao);
     
     //Create GPU buffers
@@ -95,49 +102,118 @@ int main() {
     ShaderProgramSource copyTextureSource = parseShader("shaders/copyTexture.shader");
     unsigned int copyTextureShader = createShader(copyTextureSource.VertexSource, copyTextureSource.FragmentSource);
 
+    ShaderProgramSource blurSource = parseShader("shaders/blur.shader");
+    unsigned int blurShader = createShader(blurSource.VertexSource, blurSource.FragmentSource);
+
     ShaderProgramSource divergenceSource = parseShader("shaders/divergence.shader");
     unsigned int divergenceShader = createShader(divergenceSource.VertexSource, divergenceSource.FragmentSource);
+
+    ShaderProgramSource pressureSource = parseShader("shaders/pressure.shader");
+    unsigned int pressureShader = createShader(pressureSource.VertexSource, pressureSource.FragmentSource);
 
     //Uniforms for texture to sample from and normalized pixel size
     int readIndex = 0;
     int writeIndex = 1;
     bool renderStartingSquare = true;
 
-    float texelSizeX = 1.0f/width;
-    float texelSizeY = 1.0f/height;
-
     int uniformTexelLocationAdvection = glGetUniformLocation(advectionShader, "texelSize");
-    int uniformTexelLocationDivergence = glGetUniformLocation(divergenceShader, "texelSize");
-    std::cout << "advection: " << uniformTexelLocationAdvection << "\ndivergence: " << uniformTexelLocationDivergence << std::endl;
     int uniformTextureLocation = glGetUniformLocation(advectionShader, "inputTexture");
-    int uniformColorLocation = glGetUniformLocation(basicShader, "inputColor");
+    int uniformTexelLocationBlur = glGetUniformLocation(blurShader, "texelSize");
+    int uniformTextureLocationBlur = glGetUniformLocation(blurShader, "inputTexture");
+    int uniformColorLocationBasic = glGetUniformLocation(basicShader, "inputColor");
+    int uniformOffsetLocationBasic = glGetUniformLocation(basicShader, "offset");
+    int uniformTextureLocationDivergence = glGetUniformLocation(divergenceShader, "inputTexture");
+    int uniformTexelLocationDivergence = glGetUniformLocation(divergenceShader, "texelSize");
+    int uniformTextureLocationPressure = glGetUniformLocation(pressureShader, "inputTexture");
+    int uniformTexelLocationPressure = glGetUniformLocation(pressureShader, "texelSize");
+
+    //Mouse position variables
+    double mouseX, mouseY;
+    double normMouseX, normMouseY;
+    double mouseVelX = 0, mouseVelY = 0;
+
 
     //Main loop
     while(!glfwWindowShouldClose(window)) {
         processInput(window);
-        glBindFramebuffer(GL_FRAMEBUFFER, fbo[writeIndex]);
-        glClear(GL_COLOR_BUFFER_BIT);
-        glUseProgram(advectionShader);
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, tex[readIndex]);
+        glfwGetCursorPos(window, &mouseX, &mouseY);
+        mouseVelX = 2 * mouseX / width - 1 - normMouseX;
+        mouseVelY = -2 * mouseY / height + 1 - normMouseY;
+        normMouseX = 2 * mouseX / width - 1;
+        normMouseY = -2 * mouseY / height + 1;
 
-        glUniform1i(uniformTextureLocation, 0);
-        glUniform2f(uniformTexelLocationAdvection, texelSizeX, texelSizeY);
+        //std::cout << "X: " << mouseVelX << ", Y: " << mouseVelY << std::endl;
 
+        //Bind texture to read from and framebuffer to write to the other texture
         glBindVertexArray(vao[0]);
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+        for (int i = 0; i < 8; i++){
+            //Blur first so advection can self-spread momentum
+            glUseProgram(blurShader);
+            glBindFramebuffer(GL_FRAMEBUFFER, fbo[writeIndex]);
+            glClear(GL_COLOR_BUFFER_BIT);
+            glActiveTexture(GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_2D, tex[readIndex]);
+
+            glUniform1i(uniformTextureLocationBlur, 0);
+            glUniform2f(uniformTexelLocationBlur, texelSizeX * i, texelSizeY * i);
+
+            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0); //Single advection pass
+            
+            //Pressure calculation after blur
+            std::swap(readIndex, writeIndex);
+            glUseProgram(pressureShader);
+            glBindFramebuffer(GL_FRAMEBUFFER, fbo[writeIndex]);
+            glClear(GL_COLOR_BUFFER_BIT);
+            glActiveTexture(GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_2D, tex[readIndex]);
+
+            glUniform1i(uniformTextureLocationPressure, 0);
+            glUniform2f(uniformTexelLocationPressure, texelSizeX, texelSizeY);
+
+            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+
+            //Zero out divergence from pressure
+            std::swap(readIndex, writeIndex);
+            glUseProgram(divergenceShader);
+            glBindFramebuffer(GL_FRAMEBUFFER, fbo[writeIndex]);
+            glClear(GL_COLOR_BUFFER_BIT);
+            glActiveTexture(GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_2D, tex[readIndex]);
+
+            glUniform1i(uniformTextureLocationDivergence, 0);
+            glUniform2f(uniformTexelLocationDivergence, texelSizeX, texelSizeY);
+
+            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+
+            //Advection to simulate momentum
+            std::swap(readIndex, writeIndex);
+            glUseProgram(advectionShader);
+            glBindFramebuffer(GL_FRAMEBUFFER, fbo[writeIndex]);
+            glClear(GL_COLOR_BUFFER_BIT);
+            glActiveTexture(GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_2D, tex[readIndex]);
+
+            glUniform1i(uniformTextureLocation, 0);
+            glUniform2f(uniformTexelLocationDivergence, texelSizeX * i, texelSizeY * i);
+
+            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+            std::swap(readIndex, writeIndex);
+        }
+        std::swap(readIndex, writeIndex);
 
         glUseProgram(basicShader);
-        glBindVertexArray(vao[1]); //Render the small square in white
-        glUniform3f(uniformColorLocation, 1.0, 1.0, 1.0);
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-
         if (renderStartingSquare)
         {
-            glBindVertexArray(vao[0]); //Use basicShader to fill a texture with gray
-            glUniform3f(uniformColorLocation, 0.5, 0.5, 0.5);
+            glBindVertexArray(vao[0]); //Use basicShader to fill a texture with zero velocity and black color
+            glUniform3f(uniformColorLocationBasic, 0.5, 0.5, 0.0); //0.5 is black for red and green channels
             glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
             renderStartingSquare = false;
+        }
+        if (mouseVelX != 0 && mouseVelY != 0) {
+            glBindVertexArray(vao[1]);
+            glUniform3f(uniformColorLocationBasic, mouseVelX * 80 + 0.5, mouseVelY * 80 + 0.5, 0.0);
+            glUniform2f(uniformOffsetLocationBasic, normMouseX, normMouseY);
+            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
         }
 
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
