@@ -20,5 +20,5 @@ uniform sampler2D inputTexture;
 
 void main()
 {
-    FragColor = vec4(abs(texture(inputTexture, TexCoords).xy * 2 - 1), texture(inputTexture, TexCoords).w, 1.0f);
+    FragColor = vec4(abs(texture(inputTexture, TexCoords).xy * 2 - 1), texture(inputTexture, TexCoords).w * 10, 1.0f);
 }

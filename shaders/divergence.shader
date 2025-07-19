@@ -22,6 +22,10 @@ uniform vec2 texelSize;
 void main()
 {
     vec4 centerTexel = texture(inputTexture, TexCoords);
-    vec2 pressureForce = vec2(texture(inputTexture, TexCoords - vec2(texelSize[0], 0)).w - texture(inputTexture, TexCoords + vec2(texelSize[0], 0)).w, texture(inputTexture, TexCoords - vec2(0, texelSize[1])).w - texture(inputTexture, TexCoords + vec2(0, texelSize[1])).w);
-    FragColor = vec4(centerTexel.xy + pressureForce / 4, centerTexel.zw);
+    vec2 pressureForce = vec2(
+        texture(inputTexture, TexCoords - vec2(texelSize[0], 0)).w
+         - texture(inputTexture, TexCoords + vec2(texelSize[0], 0)).w, 
+        texture(inputTexture, TexCoords - vec2(0, texelSize[1])).w
+         - texture(inputTexture, TexCoords + vec2(0, texelSize[1])).w) / 5;
+    FragColor = vec4(centerTexel.xy + pressureForce, centerTexel.zw);
 }

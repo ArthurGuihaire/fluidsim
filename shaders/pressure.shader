@@ -21,7 +21,12 @@ uniform vec2 texelSize;
 
 void main()
 {
-    float pressure = texture(inputTexture, TexCoords - vec2(texelSize[0], 0)).x - texture(inputTexture, TexCoords + vec2(texelSize[0], 0)).x + texture(inputTexture, TexCoords - vec2(0, texelSize[1])).y -  texture(inputTexture, TexCoords + vec2(0, texelSize[1])).y;
+    float pressure = 
+      texture(inputTexture, TexCoords - vec2(texelSize[0], 0)).x 
+    - texture(inputTexture, TexCoords + vec2(texelSize[0], 0)).x 
+    + texture(inputTexture, TexCoords - vec2(0, texelSize[1])).y 
+    - texture(inputTexture, TexCoords + vec2(0, texelSize[1])).y;
     
+
     FragColor = vec4(texture(inputTexture, TexCoords).xyz, pressure);
 }

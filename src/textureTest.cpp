@@ -1,5 +1,6 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
+#include <glm/common.hpp>
 #include <glm/glm.hpp>
 
 #include <constants.h>
@@ -51,12 +52,17 @@ int main() {
     }
 
     glDisable(GL_BLEND); //Blending causes problems for some reason
+
+    float normBorderX = borderWidth * texelSizeX;
+    float normBorderY = borderWidth * texelSizeY;
+    //normBorderX = 0.0f;
+    //normBorderY = 0.0f;
     
     float quad[16] = {
-        -1.0f, -1.0f, 0.0f, 0.0f,
-        -1.0f, 1.0f, 0.0f, 1.0f,
-        1.0f, 1.0f, 1.0f, 1.0f,
-        1.0f, -1.0f, 1.0f, 0.0f
+        -1.0f + normBorderX, -1.0f + normBorderY, 0.0f + normBorderX / 2, 0.0f + normBorderY / 2,
+        -1.0f + normBorderX, 1.0f - normBorderY, 0.0f + normBorderX / 2, 1.0f - normBorderY / 2,
+        1.0f - normBorderX, 1.0f - normBorderY, 1.0f - normBorderX / 2, 1.0f - normBorderY / 2,
+        1.0f - normBorderX, -1.0f + normBorderY, 1.0f - normBorderX / 2, 0.0f + normBorderY / 2
     };
 
     //Muliply by normalized pixel sizes so its actually a square
@@ -67,12 +73,35 @@ int main() {
         50 * texelSizeX, -50 * texelSizeY
     };
 
-    unsigned int indices[6] = {
+    float blackBorder[16] = {
+        -1.0f, -1.0f, 
+        -1.0f, 1.0f, 
+        1.0f, 1.0f, 
+        1.0f, -1.0f, 
+        -1.0f + normBorderX, -1.0f + normBorderY, 
+        -1.0f + normBorderX, 1.0f - normBorderY, 
+        1.0f - normBorderX, 1.0f - normBorderY, 
+        1.0f - normBorderX, -1.0f + normBorderY
+    };
+
+    unsigned int indicesQuad[6] = {
         0, 1, 2,
         2, 3, 0
     };
-    unsigned int vao[2]; //Vertex array objects for fullscreen quad and small square
-    glGenVertexArrays(2, vao);
+
+    unsigned int indicesBorder[24] = {
+        0, 1, 5, 
+        0, 4, 5, 
+        1, 2, 6, 
+        1, 5, 6, 
+        2, 7, 3, 
+        2, 6, 7, 
+        3, 4, 0, 
+        3, 7, 4
+    };
+
+    unsigned int vao[3]; //Vertex array objects for fullscreen quad and small square
+    glGenVertexArrays(3, vao);
     
     //Create GPU buffers
     //Full-screen quad
@@ -82,14 +111,18 @@ int main() {
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
     glEnableVertexAttribArray(1);
-    IndexBuffer ibf(indices, 6);
+    IndexBuffer ibf(indicesQuad, 6);
     //Small square
     glBindVertexArray(vao[1]);
     VertexBuffer vbs(smallSquare, sizeof(smallSquare));
     glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 2, 0);
     glEnableVertexAttribArray(0);
-    IndexBuffer ibs(indices, 6);
-
+    IndexBuffer ibs(indicesQuad, 6);
+    glBindVertexArray(vao[2]);
+    VertexBuffer vbb(blackBorder, sizeof(blackBorder));
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 2, 0);
+    glEnableVertexAttribArray(0);
+    IndexBuffer ibb(indicesBorder, 24);
     //Initialize the shaders
     ShaderProgramSource basicSource = parseShader("shaders/basic.shader");
     unsigned int basicShader = createShader(basicSource.VertexSource, basicSource.FragmentSource);
@@ -126,6 +159,7 @@ int main() {
     int uniformTexelLocationDivergence = glGetUniformLocation(divergenceShader, "texelSize");
     int uniformTextureLocationPressure = glGetUniformLocation(pressureShader, "inputTexture");
     int uniformTexelLocationPressure = glGetUniformLocation(pressureShader, "texelSize");
+    int uniformTextureLocationCopy = glGetUniformLocation(copyTextureShader, "inputTexture");
 
     //Mouse position variables
     double mouseX, mouseY;
@@ -146,9 +180,9 @@ int main() {
 
         //Bind texture to read from and framebuffer to write to the other texture
         glBindVertexArray(vao[0]);
-        for (int i = 0; i < 8; i++){
+        for (int i = 1; i < 8; i++){
             //Blur first so advection can self-spread momentum
-            glUseProgram(blurShader);
+            /*glUseProgram(blurShader);
             glBindFramebuffer(GL_FRAMEBUFFER, fbo[writeIndex]);
             glClear(GL_COLOR_BUFFER_BIT);
             glActiveTexture(GL_TEXTURE0);
@@ -158,22 +192,22 @@ int main() {
             glUniform2f(uniformTexelLocationBlur, texelSizeX * i, texelSizeY * i);
 
             glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0); //Single advection pass
+            std::swap(readIndex, writeIndex);*/
             
             //Pressure calculation after blur
-            std::swap(readIndex, writeIndex);
-            glUseProgram(pressureShader);
+            /*glUseProgram(pressureShader);
             glBindFramebuffer(GL_FRAMEBUFFER, fbo[writeIndex]);
             glClear(GL_COLOR_BUFFER_BIT);
             glActiveTexture(GL_TEXTURE0);
             glBindTexture(GL_TEXTURE_2D, tex[readIndex]);
 
             glUniform1i(uniformTextureLocationPressure, 0);
-            glUniform2f(uniformTexelLocationPressure, texelSizeX, texelSizeY);
+            glUniform2f(uniformTexelLocationPressure, texelSizeX * (i+1), texelSizeY * (i+1));
 
             glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+            std::swap(readIndex, writeIndex);
 
             //Zero out divergence from pressure
-            std::swap(readIndex, writeIndex);
             glUseProgram(divergenceShader);
             glBindFramebuffer(GL_FRAMEBUFFER, fbo[writeIndex]);
             glClear(GL_COLOR_BUFFER_BIT);
@@ -181,12 +215,12 @@ int main() {
             glBindTexture(GL_TEXTURE_2D, tex[readIndex]);
 
             glUniform1i(uniformTextureLocationDivergence, 0);
-            glUniform2f(uniformTexelLocationDivergence, texelSizeX, texelSizeY);
+            glUniform2f(uniformTexelLocationDivergence, texelSizeX * i, texelSizeY * i);
 
             glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+            std::swap(readIndex, writeIndex);*/
 
             //Advection to simulate momentum
-            std::swap(readIndex, writeIndex);
             glUseProgram(advectionShader);
             glBindFramebuffer(GL_FRAMEBUFFER, fbo[writeIndex]);
             glClear(GL_COLOR_BUFFER_BIT);
@@ -199,7 +233,7 @@ int main() {
             glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
             std::swap(readIndex, writeIndex);
         }
-        std::swap(readIndex, writeIndex);
+        //std::swap(readIndex, writeIndex);
 
         glUseProgram(basicShader);
         if (renderStartingSquare)
@@ -220,6 +254,7 @@ int main() {
         glClear(GL_COLOR_BUFFER_BIT);
 
         glUseProgram(copyTextureShader);
+        glUniform1i(uniformTextureLocationCopy, 0);
 
         glBindVertexArray(vao[0]);
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
@@ -227,6 +262,6 @@ int main() {
         glfwSwapBuffers(window);
         glfwPollEvents();
 
-        std::swap(readIndex, writeIndex);
+        //std::swap(readIndex, writeIndex);
     }
 }
