@@ -55,8 +55,8 @@ int main() {
 
     float normBorderX = borderWidth * texelSizeX;
     float normBorderY = borderWidth * texelSizeY;
-    //normBorderX = 0.0f;
-    //normBorderY = 0.0f;
+    normBorderX = 0.0f;
+    normBorderY = 0.0f;
     
     float quad[16] = {
         -1.0f + normBorderX, -1.0f + normBorderY, 0.0f + normBorderX / 2, 0.0f + normBorderY / 2,
@@ -195,7 +195,7 @@ int main() {
             std::swap(readIndex, writeIndex);*/
             
             //Pressure calculation after blur
-            /*glUseProgram(pressureShader);
+            glUseProgram(pressureShader);
             glBindFramebuffer(GL_FRAMEBUFFER, fbo[writeIndex]);
             glClear(GL_COLOR_BUFFER_BIT);
             glActiveTexture(GL_TEXTURE0);
@@ -218,7 +218,7 @@ int main() {
             glUniform2f(uniformTexelLocationDivergence, texelSizeX * i, texelSizeY * i);
 
             glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-            std::swap(readIndex, writeIndex);*/
+            std::swap(readIndex, writeIndex);
 
             //Advection to simulate momentum
             glUseProgram(advectionShader);
