@@ -180,7 +180,8 @@ int main() {
 
         //Bind texture to read from and framebuffer to write to the other texture
         glBindVertexArray(vao[0]);
-        for (int i = 1; i < 8; i++){
+        for (int i = 1; i < 4; i++){
+            int i2 = i * i;
             //Blur first so advection can self-spread momentum
             /*glUseProgram(blurShader);
             glBindFramebuffer(GL_FRAMEBUFFER, fbo[writeIndex]);
@@ -192,7 +193,7 @@ int main() {
             glUniform2f(uniformTexelLocationBlur, texelSizeX * i, texelSizeY * i);
 
             glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0); //Single advection pass
-            std::swap(readIndex, writeIndex);*/
+            std::swap(readIndex, writeIndex);/**/
             
             //Pressure calculation after blur
             glUseProgram(pressureShader);
@@ -202,7 +203,7 @@ int main() {
             glBindTexture(GL_TEXTURE_2D, tex[readIndex]);
 
             glUniform1i(uniformTextureLocationPressure, 0);
-            glUniform2f(uniformTexelLocationPressure, texelSizeX * (i+1), texelSizeY * (i+1));
+            glUniform2f(uniformTexelLocationPressure, texelSizeX * (i2), texelSizeY * (i2));
 
             glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
             std::swap(readIndex, writeIndex);
@@ -215,7 +216,7 @@ int main() {
             glBindTexture(GL_TEXTURE_2D, tex[readIndex]);
 
             glUniform1i(uniformTextureLocationDivergence, 0);
-            glUniform2f(uniformTexelLocationDivergence, texelSizeX * i, texelSizeY * i);
+            glUniform2f(uniformTexelLocationDivergence, texelSizeX * i2, texelSizeY * i2);
 
             glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
             std::swap(readIndex, writeIndex);
@@ -228,7 +229,7 @@ int main() {
             glBindTexture(GL_TEXTURE_2D, tex[readIndex]);
 
             glUniform1i(uniformTextureLocation, 0);
-            glUniform2f(uniformTexelLocationDivergence, texelSizeX * i, texelSizeY * i);
+            glUniform2f(uniformTexelLocationDivergence, texelSizeX * i2, texelSizeY * i2);
 
             glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
             std::swap(readIndex, writeIndex);
