@@ -8,7 +8,7 @@ class Renderer {
     public:
         Renderer();
         void setWindowSize(int width, int height);
-        void initGLFW();
+        void initGLFW(int majorVersion, int minorVersion);
         void initGLAD();
-        GLFWwindow* createWindow();
+        GLFWwindow* createWindow(bool fullscreen);
 };

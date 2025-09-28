@@ -22,8 +22,8 @@ void processInput(GLFWwindow *window) {
 int main() {
     Renderer glRenderer = Renderer();
     glRenderer.setWindowSize(width, height);
-    glRenderer.initGLFW();
-    auto window = glRenderer.createWindow();
+    glRenderer.initGLFW(3, 3);
+    auto window = glRenderer.createWindow(true);
     glRenderer.initGLAD();
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 
@@ -52,6 +52,7 @@ int main() {
     }
 
     glDisable(GL_BLEND); //Blending causes problems for some reason
+    //glClipControl(GL_UPPER_LEFT, GL_ZERO_TO_ONE);
 
     float normBorderX = borderWidth * texelSizeX;
     float normBorderY = borderWidth * texelSizeY;
@@ -246,7 +247,7 @@ int main() {
         }
         if (mouseVelX != 0 && mouseVelY != 0) {
             glBindVertexArray(vao[1]);
-            glUniform3f(uniformColorLocationBasic, mouseVelX * 80 + 0.5, mouseVelY * 80 + 0.5, 0.0);
+            glUniform3f(uniformColorLocationBasic, mouseVelX * 80 + 0.5, mouseVelY * 80 + 0.5, mouseVelX * mouseVelX + mouseVelY * mouseVelY);
             glUniform2f(uniformOffsetLocationBasic, normMouseX, normMouseY);
             glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
         }

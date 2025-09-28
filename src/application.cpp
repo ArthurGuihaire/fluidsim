@@ -6,6 +6,7 @@
 #include <vertexBuffer.h>
 #include <shaderLoader.h>
 #include <initializer.h>
+#include <constants.h>
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
     glViewport(0, 0, width, height);
@@ -19,9 +20,9 @@ void processInput(GLFWwindow *window) {
 int main() {
     //Initialize glfw window
     Renderer glRenderer = Renderer();
-    glRenderer.setWindowSize(1080, 1080);
-    glRenderer.initGLFW();
-    auto window = glRenderer.createWindow();
+    glRenderer.setWindowSize(width, height);
+    glRenderer.initGLFW(3, 3);
+    auto window = glRenderer.createWindow(true);
     glRenderer.initGLAD();
     //Set the method for changing window size
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
